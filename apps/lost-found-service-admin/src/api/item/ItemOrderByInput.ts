@@ -1,0 +1,12 @@
+import { SortOrder } from "../../util/SortOrder";
+
+export type ItemOrderByInput = {
+  createdAt?: SortOrder;
+  description?: SortOrder;
+  id?: SortOrder;
+  name?: SortOrder;
+  qrCodeId?: SortOrder;
+  status?: SortOrder;
+  updatedAt?: SortOrder;
+  userId?: SortOrder;
+};
