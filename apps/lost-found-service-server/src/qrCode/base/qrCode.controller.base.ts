@@ -16,7 +16,11 @@ import * as errors from "../../errors";
 import { Request } from "express";
 import { plainToClass } from "class-transformer";
 import { ApiNestedQuery } from "../../decorators/api-nested-query.decorator";
+import * as nestAccessControl from "nest-access-control";
+import * as defaultAuthGuard from "../../auth/defaultAuth.guard";
 import { QrCodeService } from "../qrCode.service";
+import { AclValidateRequestInterceptor } from "../../interceptors/aclValidateRequest.interceptor";
+import { AclFilterResponseInterceptor } from "../../interceptors/aclFilterResponse.interceptor";
 import { QrCodeCreateInput } from "./QrCodeCreateInput";
 import { QrCode } from "./QrCode";
 import { QrCodeFindManyArgs } from "./QrCodeFindManyArgs";
@@ -26,10 +30,24 @@ import { ItemFindManyArgs } from "../../item/base/ItemFindManyArgs";
 import { Item } from "../../item/base/Item";
 import { ItemWhereUniqueInput } from "../../item/base/ItemWhereUniqueInput";
 
+@swagger.ApiBearerAuth()
+@common.UseGuards(defaultAuthGuard.DefaultAuthGuard, nestAccessControl.ACGuard)
 export class QrCodeControllerBase {
-  constructor(protected readonly service: QrCodeService) {}
+  constructor(
+    protected readonly service: QrCodeService,
+    protected readonly rolesBuilder: nestAccessControl.RolesBuilder
+  ) {}
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Post()
   @swagger.ApiCreatedResponse({ type: QrCode })
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "create",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async createQrCode(@common.Body() data: QrCodeCreateInput): Promise<QrCode> {
     return await this.service.createQrCode({
       data: {
@@ -57,9 +75,18 @@ export class QrCodeControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get()
   @swagger.ApiOkResponse({ type: [QrCode] })
   @ApiNestedQuery(QrCodeFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "read",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async qrCodes(@common.Req() request: Request): Promise<QrCode[]> {
     const args = plainToClass(QrCodeFindManyArgs, request.query);
     return this.service.qrCodes({
@@ -80,9 +107,18 @@ export class QrCodeControllerBase {
     });
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id")
   @swagger.ApiOkResponse({ type: QrCode })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "read",
+    possession: "own",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async qrCode(
     @common.Param() params: QrCodeWhereUniqueInput
   ): Promise<QrCode | null> {
@@ -110,9 +146,18 @@ export class QrCodeControllerBase {
     return result;
   }
 
+  @common.UseInterceptors(AclValidateRequestInterceptor)
   @common.Patch("/:id")
   @swagger.ApiOkResponse({ type: QrCode })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "update",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async updateQrCode(
     @common.Param() params: QrCodeWhereUniqueInput,
     @common.Body() data: QrCodeUpdateInput
@@ -156,6 +201,14 @@ export class QrCodeControllerBase {
   @common.Delete("/:id")
   @swagger.ApiOkResponse({ type: QrCode })
   @swagger.ApiNotFoundResponse({ type: errors.NotFoundException })
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "delete",
+    possession: "any",
+  })
+  @swagger.ApiForbiddenResponse({
+    type: errors.ForbiddenException,
+  })
   async deleteQrCode(
     @common.Param() params: QrCodeWhereUniqueInput
   ): Promise<QrCode | null> {
@@ -186,8 +239,14 @@ export class QrCodeControllerBase {
     }
   }
 
+  @common.UseInterceptors(AclFilterResponseInterceptor)
   @common.Get("/:id/items")
   @ApiNestedQuery(ItemFindManyArgs)
+  @nestAccessControl.UseRoles({
+    resource: "Item",
+    action: "read",
+    possession: "any",
+  })
   async findItems(
     @common.Req() request: Request,
     @common.Param() params: QrCodeWhereUniqueInput
@@ -226,6 +285,11 @@ export class QrCodeControllerBase {
   }
 
   @common.Post("/:id/items")
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "update",
+    possession: "any",
+  })
   async connectItems(
     @common.Param() params: QrCodeWhereUniqueInput,
     @common.Body() body: ItemWhereUniqueInput[]
@@ -243,6 +307,11 @@ export class QrCodeControllerBase {
   }
 
   @common.Patch("/:id/items")
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "update",
+    possession: "any",
+  })
   async updateItems(
     @common.Param() params: QrCodeWhereUniqueInput,
     @common.Body() body: ItemWhereUniqueInput[]
@@ -260,6 +329,11 @@ export class QrCodeControllerBase {
   }
 
   @common.Delete("/:id/items")
+  @nestAccessControl.UseRoles({
+    resource: "QrCode",
+    action: "update",
+    possession: "any",
+  })
   async disconnectItems(
     @common.Param() params: QrCodeWhereUniqueInput,
     @common.Body() body: ItemWhereUniqueInput[]
